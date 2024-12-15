@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Push-Up Tracker</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .hidden {
+        display: none;
+      }
+      .text-danger {
+        font-size: 0.9em;
+      }
+      .center {
+        text-align: center;
+      }
+      .alert {
+        display: none;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center my-4">Push-Up Tracker</h1>
+
+      <div id="alertBox" class="alert alert-warning">
+        <span id="alertMessage"></span>
+        <button type="button" class="close" onclick="closeAlert()">
+          &times;
+        </button>
+      </div>
+
+      <div id="createAccountSection">
+        <h2>Create Account</h2>
+        <div class="mb-3">
+          <label for="newUsername" class="form-label">Username:</label>
+          <input
+            type="text"
+            id="newUsername"
+            class="form-control"
+            placeholder="Enter username"
+          />
+          <div id="usernameError" class="text-danger"></div>
+        </div>
+        <div class="mb-3">
+          <label for="newPassword" class="form-label">Password:</label>
+          <input
+            type="password"
+            id="newPassword"
+            class="form-control"
+            placeholder="Enter password"
+          />
+          <div id="passwordError" class="text-danger"></div>
+        </div>
+        <button class="btn btn-primary" onclick="createUser()">
+          Create Account
+        </button>
+        <p class="mt-2">
+          Already have an account?
+          <a href="javascript:void(0);" onclick="toggleSection('login')"
+            >Login here</a
+          >
+        </p>
+      </div>
+
+      <div id="loginSection" class="mt-5 hidden">
+        <h2>User Login</h2>
+        <div class="mb-3">
+          <label for="userDropdown" class="form-label">Select User:</label>
+          <select id="userDropdown" class="form-select">
+            <option value="">-- Select a user --</option>
+          </select>
+          <div id="loginError" class="text-danger"></div>
+        </div>
+        <div class="mb-3">
+          <label for="loginPassword" class="form-label">Password:</label>
+          <input
+            type="password"
+            id="loginPassword"
+            class="form-control"
+            placeholder="Enter your password"
+          />
+        </div>
+        <button class="btn btn-success" onclick="login()">Login</button>
+        <p class="mt-2">
+          Don't have an account?
+          <a href="javascript:void(0);" onclick="toggleSection('createAccount')"
+            >Create one here</a
+          >
+        </p>
+      </div>
+
+      <div id="appSection" class="hidden mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Welcome, <span id="activeUser"></span></h2>
+          <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="mb-3">
+          <label for="pushUps" class="form-label">Push-Ups:</label>
+          <input
+            type="number"
+            id="pushUps"
+            class="form-control"
+            placeholder="Enter push-up count"
+          />
+        </div>
+        <div class="mb-3">
+          <label for="date" class="form-label">Date:</label>
+          <input type="date" id="date" class="form-control" />
+        </div>
+        <button class="btn btn-primary" onclick="addPushUpRecord()">
+          Add Record
+        </button>
+
+        <div class="leaderboard mt-5">
+          <h2>Leaderboard</h2>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Total Push-Ups</th>
+                <th>Last Update</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+              <!-- Leaderboard data will appear here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const users = JSON.parse(localStorage.getItem("users")) || {}; // Load saved users or initialize empty object
+      let activeUser = localStorage.getItem("activeUser"); // Load the active user from local storage
+      const players = JSON.parse(localStorage.getItem("players")) || {}; // Load saved players data or initialize empty object
+
+      // Toggle between account creation and login sections
+      function toggleSection(section) {
+        if (section === "createAccount") {
+          document
+            .getElementById("createAccountSection")
+            .classList.remove("hidden");
+          document.getElementById("loginSection").classList.add("hidden");
+        } else if (section === "login") {
+          document
+            .getElementById("createAccountSection")
+            .classList.add("hidden");
+          document.getElementById("loginSection").classList.remove("hidden");
+        }
+      }
+
+      function createUser() {
+        const username = document.getElementById("newUsername").value.trim();
+        const password = document.getElementById("newPassword").value.trim();
+
+        document.getElementById("usernameError").textContent = "";
+        document.getElementById("passwordError").textContent = "";
+
+        if (!username) {
+          showAlert("Username cannot be empty.");
+          return;
+        }
+
+        if (!password) {
+          showAlert("Password cannot be empty.");
+          return;
+        }
+
+        if (users[username]) {
+          showAlert("Username already exists!");
+          return;
+        }
+
+        users[username] = password;
+        localStorage.setItem("users", JSON.stringify(users)); // Save users to local storage
+        showAlert("Account created successfully!", "success");
+        updateUserDropdown();
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newPassword").value = "";
+        toggleSection("login");
+      }
+
+      function updateUserDropdown() {
+        const userDropdown = document.getElementById("userDropdown");
+        userDropdown.innerHTML =
+          '<option value="">-- Select a user --</option>';
+        for (const username of Object.keys(users)) {
+          const option = document.createElement("option");
+          option.value = username;
+          option.textContent = username;
+          userDropdown.appendChild(option);
+        }
+      }
+
+      function login() {
+        const selectedUser = document.getElementById("userDropdown").value;
+        const password = document.getElementById("loginPassword").value.trim();
+
+        if (!selectedUser || !password) {
+          showAlert("Please select a user and enter a password!");
+          return;
+        }
+
+        if (users[selectedUser] === password) {
+          activeUser = selectedUser;
+          localStorage.setItem("activeUser", activeUser); // Save active user to local storage
+          document.getElementById("activeUser").textContent = selectedUser;
+          showAlert(`Welcome, ${selectedUser}!`, "success");
+          document.getElementById("loginSection").classList.add("hidden");
+          document
+            .getElementById("createAccountSection")
+            .classList.add("hidden");
+          document.getElementById("appSection").classList.remove("hidden");
+        } else {
+          showAlert("Invalid password!");
+        }
+      }
+
+      function logout() {
+        activeUser = null;
+        localStorage.removeItem("activeUser"); // Remove active user from local storage
+        document.getElementById("appSection").classList.add("hidden");
+        document.getElementById("loginSection").classList.remove("hidden");
+        showAlert("You have been logged out.");
+      }
+
+      function addPushUpRecord() {
+        if (!activeUser) {
+          showAlert("You must be logged in to add records!");
+          return;
+        }
+
+        const pushUps = parseInt(document.getElementById("pushUps").value, 10);
+        const date = document.getElementById("date").value;
+
+        if (isNaN(pushUps) || pushUps <= 0 || !date) {
+          showAlert("Please enter valid data for all fields!");
+          return;
+        }
+
+        if (!players[activeUser]) {
+          players[activeUser] = [];
+        }
+
+        players[activeUser].push({ count: pushUps, date });
+        localStorage.setItem("players", JSON.stringify(players)); // Save players data to local storage
+        updateLeaderboard();
+
+        document.getElementById("pushUps").value = "";
+        document.getElementById("date").value = "";
+      }
+
+      function updateLeaderboard() {
+        const leaderboardBody = document.getElementById("leaderboardBody");
+        leaderboardBody.innerHTML = "";
+
+        const aggregatedData = {};
+        for (const [player, records] of Object.entries(players)) {
+          aggregatedData[player] = records.reduce(
+            (total, record) => total + record.count,
+            0
+          );
+        }
+
+        const sortedPlayers = Object.entries(aggregatedData).sort(
+          (a, b) => b[1] - a[1]
+        );
+
+        for (const [player, totalPushUps] of sortedPlayers) {
+          const row = document.createElement("tr");
+
+          const playerCell = document.createElement("td");
+          playerCell.textContent = player;
+
+          const pushUpsCell = document.createElement("td");
+          pushUpsCell.textContent = totalPushUps;
+
+          const dateCell = document.createElement("td");
+          dateCell.textContent =
+            players[player][players[player].length - 1].date;
+
+          row.appendChild(playerCell);
+          row.appendChild(pushUpsCell);
+          row.appendChild(dateCell);
+          leaderboardBody.appendChild(row);
+        }
+      }
+
+      function showAlert(message, type = "warning") {
+        const alertBox = document.getElementById("alertBox");
+        const alertMessage = document.getElementById("alertMessage");
+        alertMessage.textContent = message;
+        alertBox.classList.remove(
+          "alert-warning",
+          "alert-success",
+          "alert-danger"
+        );
+        alertBox.classList.add(`alert-${type}`);
+        alertBox.style.display = "block";
+      }
+
+      function closeAlert() {
+        document.getElementById("alertBox").style.display = "none";
+      }
+
+      // Initialize dropdown on page load
+      updateUserDropdown();
+
+      // If a user is already logged in, show the app section
+      if (activeUser) {
+        document.getElementById("activeUser").textContent = activeUser;
+        document.getElementById("appSection").classList.remove("hidden");
+      }
+    </script>
+  </body>
+</html>
