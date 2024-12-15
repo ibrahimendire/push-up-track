@@ -16,15 +16,17 @@
       .hidden {
         display: none;
       }
-      .text-danger {
-        font-size: 0.9em;
-      }
       .center {
         text-align: center;
       }
       .alert {
         display: none;
         margin-top: 10px;
+      }
+      .edit-btn,
+      .delete-btn {
+        margin-left: 5px;
+        cursor: pointer;
       }
     </style>
   </head>
@@ -49,7 +51,6 @@
             class="form-control"
             placeholder="Enter username"
           />
-          <div id="usernameError" class="text-danger"></div>
         </div>
         <div class="mb-3">
           <label for="newPassword" class="form-label">Password:</label>
@@ -59,7 +60,6 @@
             class="form-control"
             placeholder="Enter password"
           />
-          <div id="passwordError" class="text-danger"></div>
         </div>
         <button class="btn btn-primary" onclick="createUser()">
           Create Account
@@ -79,7 +79,6 @@
           <select id="userDropdown" class="form-select">
             <option value="">-- Select a user --</option>
           </select>
-          <div id="loginError" class="text-danger"></div>
         </div>
         <div class="mb-3">
           <label for="loginPassword" class="form-label">Password:</label>
@@ -123,17 +122,33 @@
         </button>
 
         <div class="leaderboard mt-5">
-          <h2>Leaderboard</h2>
+          <h2>My Records</h2>
           <table class="table table-striped">
             <thead>
               <tr>
-                <th>Player</th>
-                <th>Total Push-Ups</th>
-                <th>Last Update</th>
+                <th>Date</th>
+                <th>Push-Ups</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="leaderboardBody">
-              <!-- Leaderboard data will appear here -->
+            <tbody id="recordsBody">
+              <!-- Individual records will appear here -->
+            </tbody>
+          </table>
+          <h4>Total Push-Ups: <span id="totalPushUps">0</span></h4>
+        </div>
+
+        <div class="users-leaderboard mt-5">
+          <h2>Users Leaderboard</h2>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Total Push-Ups</th>
+              </tr>
+            </thead>
+            <tbody id="usersLeaderboard">
+              <!-- Users leaderboard will appear here -->
             </tbody>
           </table>
         </div>
@@ -141,18 +156,17 @@
     </div>
 
     <script>
-      const users = JSON.parse(localStorage.getItem("users")) || {}; // Load saved users or initialize empty object
-      let activeUser = localStorage.getItem("activeUser"); // Load the active user from local storage
-      const players = JSON.parse(localStorage.getItem("players")) || {}; // Load saved players data or initialize empty object
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+      let activeUser = localStorage.getItem("activeUser");
+      const records = JSON.parse(localStorage.getItem("records")) || {};
 
-      // Toggle between account creation and login sections
       function toggleSection(section) {
         if (section === "createAccount") {
           document
             .getElementById("createAccountSection")
             .classList.remove("hidden");
           document.getElementById("loginSection").classList.add("hidden");
-        } else if (section === "login") {
+        } else {
           document
             .getElementById("createAccountSection")
             .classList.add("hidden");
@@ -164,164 +178,137 @@
         const username = document.getElementById("newUsername").value.trim();
         const password = document.getElementById("newPassword").value.trim();
 
-        document.getElementById("usernameError").textContent = "";
-        document.getElementById("passwordError").textContent = "";
-
-        if (!username) {
-          showAlert("Username cannot be empty.");
-          return;
-        }
-
-        if (!password) {
-          showAlert("Password cannot be empty.");
+        if (!username || !password) {
+          showAlert("Username and Password cannot be empty.");
           return;
         }
 
         if (users[username]) {
-          showAlert("Username already exists!");
+          showAlert("Username already exists.");
           return;
         }
 
         users[username] = password;
-        localStorage.setItem("users", JSON.stringify(users)); // Save users to local storage
+        localStorage.setItem("users", JSON.stringify(users));
         showAlert("Account created successfully!", "success");
-        updateUserDropdown();
-        document.getElementById("newUsername").value = "";
-        document.getElementById("newPassword").value = "";
         toggleSection("login");
-      }
-
-      function updateUserDropdown() {
-        const userDropdown = document.getElementById("userDropdown");
-        userDropdown.innerHTML =
-          '<option value="">-- Select a user --</option>';
-        for (const username of Object.keys(users)) {
-          const option = document.createElement("option");
-          option.value = username;
-          option.textContent = username;
-          userDropdown.appendChild(option);
-        }
       }
 
       function login() {
         const selectedUser = document.getElementById("userDropdown").value;
         const password = document.getElementById("loginPassword").value.trim();
 
-        if (!selectedUser || !password) {
-          showAlert("Please select a user and enter a password!");
-          return;
-        }
-
         if (users[selectedUser] === password) {
           activeUser = selectedUser;
-          localStorage.setItem("activeUser", activeUser); // Save active user to local storage
-          document.getElementById("activeUser").textContent = selectedUser;
-          showAlert(`Welcome, ${selectedUser}!`, "success");
+          localStorage.setItem("activeUser", activeUser);
+          document.getElementById("activeUser").textContent = activeUser;
           document.getElementById("loginSection").classList.add("hidden");
-          document
-            .getElementById("createAccountSection")
-            .classList.add("hidden");
           document.getElementById("appSection").classList.remove("hidden");
+          loadRecords();
         } else {
-          showAlert("Invalid password!");
+          showAlert("Invalid username or password.");
         }
       }
 
       function logout() {
         activeUser = null;
-        localStorage.removeItem("activeUser"); // Remove active user from local storage
+        localStorage.removeItem("activeUser");
         document.getElementById("appSection").classList.add("hidden");
         document.getElementById("loginSection").classList.remove("hidden");
-        showAlert("You have been logged out.");
       }
 
       function addPushUpRecord() {
-        if (!activeUser) {
-          showAlert("You must be logged in to add records!");
-          return;
-        }
-
-        const pushUps = parseInt(document.getElementById("pushUps").value, 10);
+        const pushUps = parseInt(document.getElementById("pushUps").value);
         const date = document.getElementById("date").value;
 
         if (isNaN(pushUps) || pushUps <= 0 || !date) {
-          showAlert("Please enter valid data for all fields!");
+          showAlert("Enter valid push-ups and date.");
           return;
         }
 
-        if (!players[activeUser]) {
-          players[activeUser] = [];
+        if (!records[activeUser]) {
+          records[activeUser] = [];
         }
 
-        players[activeUser].push({ count: pushUps, date });
-        localStorage.setItem("players", JSON.stringify(players)); // Save players data to local storage
+        records[activeUser].push({ date, count: pushUps });
+        localStorage.setItem("records", JSON.stringify(records));
+        loadRecords();
         updateLeaderboard();
+      }
 
-        document.getElementById("pushUps").value = "";
-        document.getElementById("date").value = "";
+      function loadRecords() {
+        const recordsBody = document.getElementById("recordsBody");
+        recordsBody.innerHTML = "";
+        let totalPushUps = 0;
+
+        (records[activeUser] || []).forEach((record, index) => {
+          totalPushUps += record.count;
+
+          const row = document.createElement("tr");
+
+          const dateCell = document.createElement("td");
+          dateCell.textContent = record.date;
+
+          const countCell = document.createElement("td");
+          countCell.textContent = record.count;
+
+          const actionsCell = document.createElement("td");
+          actionsCell.innerHTML = `
+          <button class="btn btn-sm btn-warning" onclick="editRecord(${index})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRecord(${index})">Delete</button>
+        `;
+
+          row.appendChild(dateCell);
+          row.appendChild(countCell);
+          row.appendChild(actionsCell);
+
+          recordsBody.appendChild(row);
+        });
+
+        document.getElementById("totalPushUps").textContent = totalPushUps;
       }
 
       function updateLeaderboard() {
-        const leaderboardBody = document.getElementById("leaderboardBody");
-        leaderboardBody.innerHTML = "";
+        const leaderboard = document.getElementById("usersLeaderboard");
+        leaderboard.innerHTML = "";
 
-        const aggregatedData = {};
-        for (const [player, records] of Object.entries(players)) {
-          aggregatedData[player] = records.reduce(
-            (total, record) => total + record.count,
+        Object.keys(users).forEach((username) => {
+          const totalPushUps = (records[username] || []).reduce(
+            (sum, record) => sum + record.count,
             0
           );
-        }
 
-        const sortedPlayers = Object.entries(aggregatedData).sort(
-          (a, b) => b[1] - a[1]
-        );
-
-        for (const [player, totalPushUps] of sortedPlayers) {
           const row = document.createElement("tr");
+          const nameCell = document.createElement("td");
+          const totalCell = document.createElement("td");
 
-          const playerCell = document.createElement("td");
-          playerCell.textContent = player;
+          nameCell.textContent = username;
+          totalCell.textContent = totalPushUps;
 
-          const pushUpsCell = document.createElement("td");
-          pushUpsCell.textContent = totalPushUps;
+          row.appendChild(nameCell);
+          row.appendChild(totalCell);
+          leaderboard.appendChild(row);
+        });
+      }
 
-          const dateCell = document.createElement("td");
-          dateCell.textContent =
-            players[player][players[player].length - 1].date;
+      document.addEventListener("DOMContentLoaded", () => {
+        const userDropdown = document.getElementById("userDropdown");
+        userDropdown.innerHTML =
+          '<option value="">-- Select a user --</option>';
+        Object.keys(users).forEach((user) => {
+          const option = document.createElement("option");
+          option.value = user;
+          option.textContent = user;
+          userDropdown.appendChild(option);
+        });
 
-          row.appendChild(playerCell);
-          row.appendChild(pushUpsCell);
-          row.appendChild(dateCell);
-          leaderboardBody.appendChild(row);
+        if (activeUser) {
+          document.getElementById("activeUser").textContent = activeUser;
+          document.getElementById("appSection").classList.remove("hidden");
+          loadRecords();
+          updateLeaderboard();
         }
-      }
-
-      function showAlert(message, type = "warning") {
-        const alertBox = document.getElementById("alertBox");
-        const alertMessage = document.getElementById("alertMessage");
-        alertMessage.textContent = message;
-        alertBox.classList.remove(
-          "alert-warning",
-          "alert-success",
-          "alert-danger"
-        );
-        alertBox.classList.add(`alert-${type}`);
-        alertBox.style.display = "block";
-      }
-
-      function closeAlert() {
-        document.getElementById("alertBox").style.display = "none";
-      }
-
-      // Initialize dropdown on page load
-      updateUserDropdown();
-
-      // If a user is already logged in, show the app section
-      if (activeUser) {
-        document.getElementById("activeUser").textContent = activeUser;
-        document.getElementById("appSection").classList.remove("hidden");
-      }
+      });
     </script>
   </body>
 </html>
