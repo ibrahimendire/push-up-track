@@ -1,314 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Push-Up Tracker</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
-    />
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-      }
-      .hidden {
-        display: none;
-      }
-      .center {
-        text-align: center;
-      }
-      .alert {
-        display: none;
-        margin-top: 10px;
-      }
-      .edit-btn,
-      .delete-btn {
-        margin-left: 5px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="text-center my-4">Push-Up Tracker</h1>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Push-Up Tracker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .edit-btn, .delete-btn {
+      cursor: pointer;
+    }
+    .alert {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center my-4">Push-Up Tracker</h1>
 
-      <div id="alertBox" class="alert alert-warning">
-        <span id="alertMessage"></span>
-        <button type="button" class="close" onclick="closeAlert()">
-          &times;
-        </button>
-      </div>
-
-      <div id="createAccountSection">
-        <h2>Create Account</h2>
-        <div class="mb-3">
-          <label for="newUsername" class="form-label">Username:</label>
-          <input
-            type="text"
-            id="newUsername"
-            class="form-control"
-            placeholder="Enter username"
-          />
-        </div>
-        <div class="mb-3">
-          <label for="newPassword" class="form-label">Password:</label>
-          <input
-            type="password"
-            id="newPassword"
-            class="form-control"
-            placeholder="Enter password"
-          />
-        </div>
-        <button class="btn btn-primary" onclick="createUser()">
-          Create Account
-        </button>
-        <p class="mt-2">
-          Already have an account?
-          <a href="javascript:void(0);" onclick="toggleSection('login')"
-            >Login here</a
-          >
-        </p>
-      </div>
-
-      <div id="loginSection" class="mt-5 hidden">
-        <h2>User Login</h2>
-        <div class="mb-3">
-          <label for="userDropdown" class="form-label">Select User:</label>
-          <select id="userDropdown" class="form-select">
-            <option value="">-- Select a user --</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label for="loginPassword" class="form-label">Password:</label>
-          <input
-            type="password"
-            id="loginPassword"
-            class="form-control"
-            placeholder="Enter your password"
-          />
-        </div>
-        <button class="btn btn-success" onclick="login()">Login</button>
-        <p class="mt-2">
-          Don't have an account?
-          <a href="javascript:void(0);" onclick="toggleSection('createAccount')"
-            >Create one here</a
-          >
-        </p>
-      </div>
-
-      <div id="appSection" class="hidden mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2>Welcome, <span id="activeUser"></span></h2>
-          <button class="btn btn-danger" onclick="logout()">Logout</button>
-        </div>
-
-        <div class="mb-3">
-          <label for="pushUps" class="form-label">Push-Ups:</label>
-          <input
-            type="number"
-            id="pushUps"
-            class="form-control"
-            placeholder="Enter push-up count"
-          />
-        </div>
-        <div class="mb-3">
-          <label for="date" class="form-label">Date:</label>
-          <input type="date" id="date" class="form-control" />
-        </div>
-        <button class="btn btn-primary" onclick="addPushUpRecord()">
-          Add Record
-        </button>
-
-        <div class="leaderboard mt-5">
-          <h2>My Records</h2>
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Push-Ups</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="recordsBody">
-              <!-- Individual records will appear here -->
-            </tbody>
-          </table>
-          <h4>Total Push-Ups: <span id="totalPushUps">0</span></h4>
-        </div>
-
-        <div class="users-leaderboard mt-5">
-          <h2>Users Leaderboard</h2>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Total Push-Ups</th>
-              </tr>
-            </thead>
-            <tbody id="usersLeaderboard">
-              <!-- Users leaderboard will appear here -->
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div id="alertBox" class="alert alert-warning">
+      <span id="alertMessage"></span>
     </div>
 
-    <script>
-      const users = JSON.parse(localStorage.getItem("users")) || {};
-      let activeUser = localStorage.getItem("activeUser");
-      const records = JSON.parse(localStorage.getItem("records")) || {};
+    <div id="createAccountSection">
+      <h2>Create Account</h2>
+      <input id="newUsername" class="form-control mb-2" placeholder="Enter username">
+      <input id="newPassword" type="password" class="form-control mb-2" placeholder="Enter password">
+      <button class="btn btn-primary" onclick="createUser()">Create Account</button>
+      <p class="mt-2">Already have an account? <a href="#" onclick="toggleSection('login')">Login here</a></p>
+    </div>
 
-      function toggleSection(section) {
-        if (section === "createAccount") {
-          document
-            .getElementById("createAccountSection")
-            .classList.remove("hidden");
-          document.getElementById("loginSection").classList.add("hidden");
-        } else {
-          document
-            .getElementById("createAccountSection")
-            .classList.add("hidden");
-          document.getElementById("loginSection").classList.remove("hidden");
-        }
-      }
+    <div id="loginSection" class="hidden">
+      <h2>User Login</h2>
+      <select id="userDropdown" class="form-select mb-2"></select>
+      <input id="loginPassword" type="password" class="form-control mb-2" placeholder="Enter password">
+      <button class="btn btn-success" onclick="login()">Login</button>
+    </div>
 
-      function createUser() {
-        const username = document.getElementById("newUsername").value.trim();
-        const password = document.getElementById("newPassword").value.trim();
+    <div id="appSection" class="hidden">
+      <div class="d-flex justify-content-between">
+        <h2>Welcome, <span id="activeUser"></span></h2>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
 
-        if (!username || !password) {
-          showAlert("Username and Password cannot be empty.");
-          return;
-        }
+      <div>
+        <input id="pushUps" type="number" class="form-control mb-2" placeholder="Enter push-up count">
+        <input id="date" type="date" class="form-control mb-2">
+        <button class="btn btn-primary" onclick="addPushUpRecord()">Add Record</button>
+      </div>
 
-        if (users[username]) {
-          showAlert("Username already exists.");
-          return;
-        }
+      <h3 class="mt-4">My Records</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Push-Ups</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+      <h4>Total Push-Ups: <span id="totalPushUps">0</span></h4>
 
-        users[username] = password;
-        localStorage.setItem("users", JSON.stringify(users));
-        showAlert("Account created successfully!", "success");
-        toggleSection("login");
-      }
+      <h3 class="mt-4">Users Leaderboard</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Total Push-Ups</th>
+          </tr>
+        </thead>
+        <tbody id="usersLeaderboard"></tbody>
+      </table>
+    </div>
+  </div>
 
-      function login() {
-        const selectedUser = document.getElementById("userDropdown").value;
-        const password = document.getElementById("loginPassword").value.trim();
+  <script>
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    let activeUser = localStorage.getItem('activeUser');
+    const records = JSON.parse(localStorage.getItem('records')) || {};
+    let editingIndex = null;
 
-        if (users[selectedUser] === password) {
-          activeUser = selectedUser;
-          localStorage.setItem("activeUser", activeUser);
-          document.getElementById("activeUser").textContent = activeUser;
-          document.getElementById("loginSection").classList.add("hidden");
-          document.getElementById("appSection").classList.remove("hidden");
-          loadRecords();
-        } else {
-          showAlert("Invalid username or password.");
-        }
-      }
+    function toggleSection(section) {
+      document.getElementById('createAccountSection').classList.toggle('hidden', section === 'login');
+      document.getElementById('loginSection').classList.toggle('hidden', section !== 'login');
+    }
 
-      function logout() {
-        activeUser = null;
-        localStorage.removeItem("activeUser");
-        document.getElementById("appSection").classList.add("hidden");
-        document.getElementById("loginSection").classList.remove("hidden");
-      }
+    function showAlert(message) {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.style.display = 'block';
+      alertBox.textContent = message;
+      setTimeout(() => (alertBox.style.display = 'none'), 2000);
+    }
 
-      function addPushUpRecord() {
-        const pushUps = parseInt(document.getElementById("pushUps").value);
-        const date = document.getElementById("date").value;
+    function createUser() {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value.trim();
+      if (!username || !password) return showAlert('Please fill all fields.');
+      if (users[username]) return showAlert('Username already exists.');
+      users[username] = password;
+      localStorage.setItem('users', JSON.stringify(users));
+      toggleSection('login');
+      populateUserDropdown();
+    }
 
-        if (isNaN(pushUps) || pushUps <= 0 || !date) {
-          showAlert("Enter valid push-ups and date.");
-          return;
-        }
+    function populateUserDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.innerHTML = '';
+      Object.keys(users).forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        dropdown.appendChild(option);
+      });
+    }
 
-        if (!records[activeUser]) {
-          records[activeUser] = [];
-        }
+    function login() {
+      const username = document.getElementById('userDropdown').value;
+      const password = document.getElementById('loginPassword').value;
+      if (users[username] !== password) return showAlert('Invalid credentials.');
+      activeUser = username;
+      localStorage.setItem('activeUser', username);
+      document.getElementById('activeUser').textContent = username;
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('appSection').classList.remove('hidden');
+      loadRecords();
+      updateLeaderboard();
+    }
 
+    function logout() {
+      activeUser = null;
+      localStorage.removeItem('activeUser');
+      document.getElementById('appSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+    }
+
+    function addPushUpRecord() {
+      const pushUps = parseInt(document.getElementById('pushUps').value);
+      const date = document.getElementById('date').value;
+      if (!pushUps || !date) return showAlert('Fill all fields.');
+      if (!records[activeUser]) records[activeUser] = [];
+      if (editingIndex !== null) {
+        records[activeUser][editingIndex] = { date, count: pushUps };
+        editingIndex = null;
+      } else {
         records[activeUser].push({ date, count: pushUps });
-        localStorage.setItem("records", JSON.stringify(records));
+      }
+      localStorage.setItem('records', JSON.stringify(records));
+      loadRecords();
+      updateLeaderboard();
+    }
+
+    function loadRecords() {
+      const recordsBody = document.getElementById('recordsBody');
+      const totalPushUps = document.getElementById('totalPushUps');
+      recordsBody.innerHTML = '';
+      let total = 0;
+      (records[activeUser] || []).forEach((record, index) => {
+        total += record.count;
+        recordsBody.innerHTML += `
+          <tr>
+            <td>${record.date}</td>
+            <td>${record.count}</td>
+            <td>
+              <button class="btn btn-sm btn-warning" onclick="editRecord(${index})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteRecord(${index})">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+      totalPushUps.textContent = total;
+    }
+
+    function editRecord(index) {
+      const record = records[activeUser][index];
+      document.getElementById('pushUps').value = record.count;
+      document.getElementById('date').value = record.date;
+      editingIndex = index;
+    }
+
+    function deleteRecord(index) {
+      records[activeUser].splice(index, 1);
+      localStorage.setItem('records', JSON.stringify(records));
+      loadRecords();
+      updateLeaderboard();
+    }
+
+    function updateLeaderboard() {
+      const leaderboard = document.getElementById('usersLeaderboard');
+      leaderboard.innerHTML = '';
+      Object.keys(users).forEach(user => {
+        const total = (records[user] || []).reduce((sum, record) => sum + record.count, 0);
+        leaderboard.innerHTML += `<tr><td>${user}</td><td>${total}</td></tr>`;
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      populateUserDropdown();
+      if (activeUser) {
+        document.getElementById('activeUser').textContent = activeUser;
+        document.getElementById('appSection').classList.remove('hidden');
         loadRecords();
         updateLeaderboard();
       }
-
-      function loadRecords() {
-        const recordsBody = document.getElementById("recordsBody");
-        recordsBody.innerHTML = "";
-        let totalPushUps = 0;
-
-        (records[activeUser] || []).forEach((record, index) => {
-          totalPushUps += record.count;
-
-          const row = document.createElement("tr");
-
-          const dateCell = document.createElement("td");
-          dateCell.textContent = record.date;
-
-          const countCell = document.createElement("td");
-          countCell.textContent = record.count;
-
-          const actionsCell = document.createElement("td");
-          actionsCell.innerHTML = `
-          <button class="btn btn-sm btn-warning" onclick="editRecord(${index})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRecord(${index})">Delete</button>
-        `;
-
-          row.appendChild(dateCell);
-          row.appendChild(countCell);
-          row.appendChild(actionsCell);
-
-          recordsBody.appendChild(row);
-        });
-
-        document.getElementById("totalPushUps").textContent = totalPushUps;
-      }
-
-      function updateLeaderboard() {
-        const leaderboard = document.getElementById("usersLeaderboard");
-        leaderboard.innerHTML = "";
-
-        Object.keys(users).forEach((username) => {
-          const totalPushUps = (records[username] || []).reduce(
-            (sum, record) => sum + record.count,
-            0
-          );
-
-          const row = document.createElement("tr");
-          const nameCell = document.createElement("td");
-          const totalCell = document.createElement("td");
-
-          nameCell.textContent = username;
-          totalCell.textContent = totalPushUps;
-
-          row.appendChild(nameCell);
-          row.appendChild(totalCell);
-          leaderboard.appendChild(row);
-        });
-      }
-
-      document.addEventListener("DOMContentLoaded", () => {
-        const userDropdown = document.getElementById("userDropdown");
-        userDropdown.innerHTML =
-          '<option value="">-- Select a user --</option>';
-        Object.keys(users).forEach((user) => {
-          const option = document.createElement("option");
-          option.value = user;
-          option.textContent = user;
-          userDropdown.appendChild(option);
-        });
-
-        if (activeUser) {
-          document.getElementById("activeUser").textContent = activeUser;
-          document.getElementById("appSection").classList.remove("hidden");
-          loadRecords();
-          updateLeaderboard();
-        }
-      });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
